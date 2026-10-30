@@ -1,0 +1,116 @@
+{
+  "name": "Agendo - Simulador de Caja Nivel 3",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "simular-agendo",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook Agendo",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst initialCash = input.initialCash ?? 60000;\nconst floorCash = 10000;\nconst initialClients = 1150;\nconst organicClients = 50;\nconst fixedCosts = 14000;\nconst marginBruto = 0.78;\n\nconst priceMonthly = input.priceMonthly ?? 25;\nconst priceAnnual = input.priceAnnual ?? 240;\nconst convRate = input.convRate ?? 0.14;\nconst churnMonthly = input.churnMonthly ?? 0.06;\nconst pctAnnual = input.pctAnnual ?? 0.10;\nconst renewalAnnual = 0.70;\n\nlet spendPlan = input.spendPlan;\nif (!Array.isArray(spendPlan) || spendPlan.length !== 24) {\n  const defaultSpend = input.monthlySpend ?? 10000;\n  spendPlan = Array(24).fill(defaultSpend);\n}\n\nfunction getTrials(spend) {\n  const pts = [\n    { x: 0, y: 0 },\n    { x: 5000, y: 290 },\n    { x: 10000, y: 500 },\n    { x: 15000, y: 650 },\n    { x: 20000, y: 760 },\n    { x: 30000, y: 900 }\n  ];\n  if (spend <= 0) return 0;\n  if (spend >= 30000) return 900;\n  for (let i = 0; i < pts.length - 1; i++) {\n    if (spend >= pts[i].x && spend <= pts[i + 1].x) {\n      return pts[i].y + (spend - pts[i].x) * (pts[i + 1].y - pts[i].y) / (pts[i + 1].x - pts[i].x);\n    }\n  }\n  return 500;\n}\n\nlet cash = initialCash;\nlet activeMonthly = initialClients;\nconst annualCohorts = {};\nlet minCash = initialCash;\nlet minCashMonth = 0;\nlet ruleBroken = false;\nlet firstBreakMonth = null;\n\nconst monthlyDetails = [];\nconst marginMonthly = priceMonthly * marginBruto;\nconst marginAnnual = priceAnnual * marginBruto;\n\nfor (let m = 1; m <= 24; m++) {\n  const spend = spendPlan[m - 1];\n  const trials = getTrials(spend);\n  const vendedoras = trials > 0 ? Math.ceil(trials / 500) : 0;\n  const vendedorasCost = vendedoras * 1200;\n\n  const newPaid = trials * convRate;\n  const newTotal = newPaid + organicClients;\n\n  const newAnnual = newTotal * pctAnnual;\n  const newMonthly = newTotal * (1 - pctAnnual);\n\n  activeMonthly = (activeMonthly * (1 - churnMonthly)) + newMonthly;\n\n  let inflowMonthly = activeMonthly * marginMonthly;\n  let inflowAnnual = newAnnual * marginAnnual;\n\n  let renewedAnnual = 0;\n  if (annualCohorts[m - 12]) {\n    renewedAnnual = annualCohorts[m - 12] * renewalAnnual;\n    inflowAnnual += renewedAnnual * marginAnnual;\n    annualCohorts[m] = newAnnual + renewedAnnual;\n  } else {\n    annualCohorts[m] = newAnnual;\n  }\n\n  const totalInflow = inflowMonthly + inflowAnnual;\n  const commission = newPaid * 20;\n  const totalOutflow = spend + vendedorasCost + commission + fixedCosts;\n\n  cash = cash + totalInflow - totalOutflow;\n\n  if (cash < minCash) {\n    minCash = cash;\n    minCashMonth = m;\n  }\n\n  if (cash < floorCash && !ruleBroken) {\n    ruleBroken = true;\n    firstBreakMonth = m;\n  }\n\n  let activeAnnual = 0;\n  for (let k = Math.max(1, m - 11); k <= m; k++) {\n    activeAnnual += (annualCohorts[k] || 0);\n  }\n\n  const totalActive = activeMonthly + activeAnnual;\n\n  monthlyDetails.push({\n    mes: m,\n    inversion: spend,\n    trials: Number(trials.toFixed(1)),\n    vendedoras: vendedoras,\n    nuevosPauta: Number(newPaid.toFixed(1)),\n    nuevosTotales: Number(newTotal.toFixed(1)),\n    activosMensual: Number(activeMonthly.toFixed(1)),\n    activosAnual: Number(activeAnnual.toFixed(1)),\n    activosTotales: Number(totalActive.toFixed(1)),\n    entradas: Number(totalInflow.toFixed(2)),\n    salidas: Number(totalOutflow.toFixed(2)),\n    cajaFinal: Number(cash.toFixed(2)),\n    alertaPiso: cash < floorCash\n  });\n}\n\nreturn [{\n  json: {\n    status: ruleBroken ? \"CRITICAL_DEFICIT\" : \"VIABLE_PLAN\",\n    reglaRota: ruleBroken,\n    mesQuiebra: firstBreakMonth,\n    cajaMinima: Number(minCash.toFixed(2)),\n    mesCajaMinima: minCashMonth,\n    cajaMes24: Number(cash.toFixed(2)),\n    clientesActivosMes24: Number(monthlyDetails[23].activosTotales.toFixed(1)),\n    resumenMensual: monthlyDetails\n  }\n}];"
+      },
+      "id": "node-code-engine",
+      "name": "Motor de Simulación a 24 Meses",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.reglaRota }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-if-piso",
+      "name": "¿Rompe Piso $10k?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS, GET"
+              }
+            ]
+          }
+        }
+      },
+      "id": "node-respond",
+      "name": "Respuesta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [920, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Agendo": {
+      "main": [
+        [
+          {
+            "node": "Motor de Simulación a 24 Meses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Motor de Simulación a 24 Meses": {
+      "main": [
+        [
+          {
+            "node": "¿Rompe Piso $10k?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Rompe Piso $10k?": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

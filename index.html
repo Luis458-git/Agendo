@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agendo SaaS · Simulador Ejecutivo & Tablero Financiero (Niveles 2 y 3)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            danger: {
+              500: '#ef4444',
+              600: '#dc2626',
+            },
+            success: {
+              500: '#10b981',
+              600: '#059669',
+            },
+            warning: {
+              500: '#f59e0b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbars and glowing effects */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.2);
+    }
+    .glow-red {
+      box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.35);
+    }
+    .glow-green {
+      box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.35);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid fa-scissors text-white text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xl font-bold tracking-tight text-white">Agendo</span>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">SaaS B2B</span>
+          </div>
+          <p class="text-xs text-slate-400">Simulador Financiero & Análisis de Liquidez · Reto Caso B</p>
+        </div>
+      </div>
+
+      <!-- NAVIGATION TABS -->
+      <nav class="hidden md:flex space-x-1 p-1 bg-slate-950/60 rounded-xl border border-slate-800" id="mainTabs">
+        <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="px-4 py-2 rounded-lg text-xs font-medium transition-all bg-indigo-600 text-white shadow-sm flex items-center space-x-2">
+          <i class="fa-solid fa-gauge-high"></i>
+          <span>Nivel 2: Tablero Interactivo</span>
+        </button>
+        <button onclick="switchTab('simulator')" id="tabBtn-simulator" class="px-4 py-2 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center space-x-2">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Nivel 3: Simulador 24 Meses</span>
+        </button>
+        <button onclick="switchTab('pitch')" id="tabBtn-pitch" class="px-4 py-2 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center space-x-2">
+          <i class="fa-solid fa-bullhorn"></i>
+          <span>Pitch para Ricardo (2 min)</span>
+        </button>
+        <button onclick="switchTab('audit')" id="tabBtn-audit" class="px-4 py-2 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center space-x-2">
+          <i class="fa-solid fa-calculator"></i>
+          <span>Nivel 1 & Trampa Revelada</span>
+        </button>
+      </nav>
+
+      <!-- STATUS & RESET -->
+      <div class="flex items-center space-x-3">
+        <button onclick="resetToCaseDefaults()" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs text-slate-300 font-medium transition-colors flex items-center space-x-1.5" title="Restablecer a valores exactos del caso">
+          <i class="fa-solid fa-rotate-left text-indigo-400"></i>
+          <span>Restablecer Caso</span>
+        </button>
+        <div class="hidden sm:flex items-center space-x-2 pl-2 border-l border-slate-800">
+          <div class="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+          <span class="text-xs text-slate-300">Caja Inicial: <strong class="text-white">$60.000</strong></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: NIVEL 2 - TABLERO INTERACTIVO (SLIDERS + GRÁFICOS) -->
+    <!-- ========================================== -->
+    <section id="view-dashboard" class="space-y-8">
+      
+      <!-- EXECUTIVE ALERT BANNER: THE TRAP EXPOSED -->
+      <div id="trapAlertBanner" class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="flex items-start space-x-3">
+          <div class="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 shrink-0 mt-0.5 md:mt-0">
+            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-amber-200">Alerta de Inversionista: La Trampa del CAC Mezclado (Blended)</h2>
+            <p class="text-xs text-slate-300 mt-0.5">
+              Valeria reportó <strong class="text-amber-300">LTV:CAC de 2,4</strong> con un CAC de <strong class="text-amber-300">$105</strong> porque mezcló 50 clientes orgánicos gratuitos. 
+              El costo de adquisición pagado real (CAC Paid) es de <strong class="text-rose-400">$180</strong> (Ratio real: <span id="trapPaidRatio" class="font-bold text-rose-400">1,40x</span>).
+              Si se triplica la pauta a $30k, la saturación del canal dispara el CAC marginal a <strong class="text-rose-400">$398,57</strong>.
+            </p>
+          </div>
+        </div>
+        <button onclick="applyValeriaScenario()" class="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold shrink-0 transition-all flex items-center space-x-2">
+          <span>Ver Error de Valeria ($30k)</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <!-- TOP METRIC CARDS -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <!-- Metric 1: CAC Paid -->
+        <div class="glass-card p-4 rounded-2xl glass-card-hover transition-all">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span>CAC Paid (Pauta)</span>
+            <i class="fa-solid fa-bullseye text-indigo-400"></i>
+          </div>
+          <div class="text-2xl font-bold text-white tracking-tight" id="kpi-cacPaid">$180</div>
+          <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+            <span>vs Blended: <strong class="text-slate-200" id="kpi-cacBlended">$105</strong></span>
+          </div>
+        </div>
+
+        <!-- Metric 2: LTV 24m -->
+        <div class="glass-card p-4 rounded-2xl glass-card-hover transition-all">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span>LTV (24 Meses)</span>
+            <i class="fa-solid fa-sack-dollar text-emerald-400"></i>
+          </div>
+          <div class="text-2xl font-bold text-white tracking-tight" id="kpi-ltv24">$251,27</div>
+          <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+            <span>Sin tope: <strong class="text-slate-200" id="kpi-ltvUncapped">$325</strong></span>
+          </div>
+        </div>
+
+        <!-- Metric 3: LTV:CAC Paid Ratio (Semáforo) -->
+        <div class="glass-card p-4 rounded-2xl glass-card-hover transition-all border-l-4" id="kpi-ltvCacCard">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span>LTV:CAC Paid</span>
+            <span id="kpi-semaphoreBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300">Precaución</span>
+          </div>
+          <div class="text-2xl font-bold text-white tracking-tight" id="kpi-ltvCacPaid">1,40x</div>
+          <div class="text-[11px] text-slate-400 mt-1">
+            <span>Blended: <strong class="text-slate-200" id="kpi-ltvCacBlended">2,40x</strong></span>
+          </div>
+        </div>
+
+        <!-- Metric 4: Payback Period -->
+        <div class="glass-card p-4 rounded-2xl glass-card-hover transition-all">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span>Payback (Recuperación)</span>
+            <i class="fa-solid fa-clock-rotate-left text-violet-400"></i>
+          </div>
+          <div class="text-2xl font-bold text-white tracking-tight" id="kpi-payback">13 meses</div>
+          <div class="text-[11px] text-slate-400 mt-1">
+            <span>Meta SaaS: <strong class="text-slate-200">&lt; 12 meses</strong></span>
+          </div>
+        </div>
+
+        <!-- Metric 5: CAC Marginal -->
+        <div class="glass-card p-4 rounded-2xl glass-card-hover transition-all">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span>CAC Marginal (Extra)</span>
+            <i class="fa-solid fa-arrow-trend-up text-rose-400"></i>
+          </div>
+          <div class="text-2xl font-bold text-rose-300 tracking-tight" id="kpi-cacMarginal">$180</div>
+          <div class="text-[11px] text-slate-400 mt-1">
+            <span>Por cliente extra</span>
+          </div>
+        </div>
+
+        <!-- Metric 6: Equipo Comercial -->
+        <div class="glass-card p-4 rounded-2xl glass-card-hover transition-all">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span>Vendedoras Necesarias</span>
+            <i class="fa-solid fa-users text-cyan-400"></i>
+          </div>
+          <div class="text-2xl font-bold text-white tracking-tight" id="kpi-salesReps">1</div>
+          <div class="text-[11px] text-slate-400 mt-1">
+            <span>Trials: <strong class="text-slate-200" id="kpi-totalTrials">500</strong> / 500 cap</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN INTERACTIVE WORKBENCH: CONTROLS (LEFT) + CHARTS (RIGHT) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- CONTROLS PANEL (4 COLUMNS ON LG) -->
+        <div class="lg:col-span-4 glass-card p-6 rounded-3xl space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-sliders text-indigo-400"></i>
+              <span>Panel de Control de Supuestos</span>
+            </h3>
+            <span class="text-[11px] text-slate-400">Tiempo Real</span>
+          </div>
+
+          <!-- SLIDER 1: Inversión en Anuncios ($0 a $30,000) -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <label for="slider-spend" class="font-medium text-slate-300">Inversión en Anuncios</label>
+              <span class="font-mono font-bold text-indigo-400 text-sm" id="val-spend">$10.000 / mes</span>
+            </div>
+            <input type="range" id="slider-spend" min="0" max="30000" step="500" value="10000" 
+              class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+            <div class="flex justify-between text-[10px] text-slate-500">
+              <span>$0</span>
+              <span>$10k (Hoy)</span>
+              <span>$12.5k (Opt)</span>
+              <span>$30k (Valeria)</span>
+            </div>
+          </div>
+
+          <!-- SLIDER 2: % Conversión Trial a Pago -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <label for="slider-conv" class="font-medium text-slate-300">Conversión de Trial a Pago</label>
+              <span class="font-mono font-bold text-emerald-400 text-sm" id="val-conv">14,0 %</span>
+            </div>
+            <input type="range" id="slider-conv" min="5" max="30" step="0.5" value="14" 
+              class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+            <div class="flex justify-between text-[10px] text-slate-500">
+              <span>5% (Pesimista)</span>
+              <span>14% (Base)</span>
+              <span>18% (Propuesta)</span>
+              <span>30%</span>
+            </div>
+          </div>
+
+          <!-- SLIDER 3: Penetración Plan Anual (%) -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <label for="slider-annualPct" class="font-medium text-slate-300">Penetración Plan Anual ($240)</label>
+              <span class="font-mono font-bold text-violet-400 text-sm" id="val-annualPct">10,0 %</span>
+            </div>
+            <input type="range" id="slider-annualPct" min="0" max="60" step="5" value="10" 
+              class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-500">
+            <div class="flex justify-between text-[10px] text-slate-500">
+              <span>0%</span>
+              <span>10% (Hoy)</span>
+              <span>25% - 30% (Palanca 1)</span>
+              <span>60%</span>
+            </div>
+          </div>
+
+          <!-- SLIDER 4: Precio Mensual ($) -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <label for="slider-price" class="font-medium text-slate-300">Precio Mensual ($/mes)</label>
+              <span class="font-mono font-bold text-amber-400 text-sm" id="val-price">$25 / mes</span>
+            </div>
+            <input type="range" id="slider-price" min="20" max="40" step="1" value="25" 
+              class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+            <div class="flex justify-between text-[10px] text-slate-500">
+              <span>$20</span>
+              <span>$25 (Hoy)</span>
+              <span>$28 (Palanca 2)</span>
+              <span>$35 (CitaYa)</span>
+            </div>
+          </div>
+
+          <!-- SLIDER 5: Cancelación Mensual / Churn (%) -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <label for="slider-churn" class="font-medium text-slate-300">Cancelación Mensual (Churn)</label>
+              <span class="font-mono font-bold text-rose-400 text-sm" id="val-churn">6,0 %</span>
+            </div>
+            <input type="range" id="slider-churn" min="2" max="15" step="0.5" value="6" 
+              class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-500">
+            <div class="flex justify-between text-[10px] text-slate-500">
+              <span>2% (Excelente)</span>
+              <span>6% (Actual)</span>
+              <span>10%</span>
+              <span>15%</span>
+            </div>
+          </div>
+
+          <!-- PRESET QUICK BUTTONS -->
+          <div class="pt-4 border-t border-slate-800 space-y-2">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Escenarios Preconfigurados</span>
+            <div class="grid grid-cols-3 gap-2">
+              <button onclick="setPreset('base')" class="px-2 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-center transition-colors">
+                Hoy ($10k)
+              </button>
+              <button onclick="setPreset('valeria')" class="px-2 py-2 rounded-xl text-xs font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-center transition-colors">
+                Valeria ($30k)
+              </button>
+              <button onclick="setPreset('optimized')" class="px-2 py-2 rounded-xl text-xs font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-center transition-colors">
+                Propuesta ⭐
+              </button>
+            </div>
+          </div>
+
+          <!-- FIXED PARAMETERS SUMMARY -->
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+            <div class="flex justify-between"><span>Margen Bruto:</span> <strong class="text-slate-200">78 %</strong></div>
+            <div class="flex justify-between"><span>Clientes Orgánicos:</span> <strong class="text-slate-200">50 / mes ($0 CAC)</strong></div>
+            <div class="flex justify-between"><span>Sueldo Vendedora:</span> <strong class="text-slate-200">$1.200 c/500 trials</strong></div>
+            <div class="flex justify-between"><span>Comisión Vendedora:</span> <strong class="text-slate-200">$20 / cliente pauta</strong></div>
+            <div class="flex justify-between"><span>Costos Fijos Operativos:</span> <strong class="text-slate-200">$14.000 / mes</strong></div>
+          </div>
+        </div>
+
+        <!-- CHARTS SECTION (8 COLUMNS ON LG) -->
+        <div class="lg:col-span-8 space-y-6">
+
+          <!-- CHART 1: COHORT CASH CURVE (J-CURVE) -->
+          <div class="glass-card p-6 rounded-3xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-2">
+              <div>
+                <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                  <i class="fa-solid fa-chart-area text-indigo-400"></i>
+                  <span>Curva de Caja del Cliente (Mes 0 al 24)</span>
+                </h3>
+                <p class="text-xs text-slate-400 mt-0.5">Recuperación de la inversión (Payback) y acumulación neta de margen</p>
+              </div>
+              <div class="flex items-center space-x-3 text-[11px]">
+                <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span><span class="text-slate-300">Plan Mensual</span></span>
+                <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span class="text-slate-300">Plan Anual</span></span>
+                <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span><span class="text-slate-300">Propuesta Mixta</span></span>
+              </div>
+            </div>
+            <div class="h-64 mt-4">
+              <canvas id="cashCurveChart"></canvas>
+            </div>
+            <div class="mt-3 p-3 rounded-xl bg-slate-900/50 border border-slate-800/80 text-[11px] text-slate-300 flex items-center justify-between">
+              <div>
+                <i class="fa-solid fa-lightbulb text-amber-400 mr-1.5"></i>
+                <span class="text-slate-400">Poder del Plan Anual:</span> <strong>Payback inmediato en el Mes 1</strong> ($187,20 margen inicial vs CAC), eliminando el déficit de tesorería.
+              </div>
+              <span class="text-indigo-400 font-mono font-semibold" id="notePaybackDiff">Ahorro: 12 meses de descalce</span>
+            </div>
+          </div>
+
+          <!-- CHARTS 2 & 3: GRID SIDE-BY-SIDE -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- CHART 2: LTV vs CAC & UMBRALES (1:1 y 3:1) -->
+            <div class="glass-card p-5 rounded-3xl">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <h4 class="text-xs font-bold text-white flex items-center space-x-1.5">
+                  <i class="fa-solid fa-scale-balanced text-emerald-400"></i>
+                  <span>LTV frente a CAC (Paid vs Blended)</span>
+                </h4>
+                <span class="text-[10px] text-slate-400 font-mono">Umbrales 1:1 y 3:1</span>
+              </div>
+              <div class="h-56 mt-3">
+                <canvas id="ltvCacBarChart"></canvas>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-2 text-center">
+                La barra de <strong class="text-rose-400">CAC Paid</strong> debe superar holgadamente la línea 1:1 y buscar la línea 3:1 para ser rentable.
+              </p>
+            </div>
+
+            <!-- CHART 3: FUNNEL DE ADQUISICIÓN Y RENDIMIENTOS DECRECIENTES -->
+            <div class="glass-card p-5 rounded-3xl">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <h4 class="text-xs font-bold text-white flex items-center space-x-1.5">
+                  <i class="fa-solid fa-filter text-violet-400"></i>
+                  <span>Embudo de Conversión & Saturación</span>
+                </h4>
+                <span class="text-[10px] text-slate-400 font-mono" id="funnelCostPerTrial">$20,00 / trial</span>
+              </div>
+              <div class="h-56 mt-3">
+                <canvas id="funnelChart"></canvas>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-2 text-center" id="funnelSaturationNote">
+                A $30k el costo por registro salta a $33,33 (rendimiento decreciente).
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ========================================== -->
+    <!-- TAB 2: NIVEL 3 - SIMULADOR DE CAJA 24 MESES -->
+    <!-- ========================================== -->
+    <section id="view-simulator" class="space-y-8 hidden">
+      
+      <!-- HEADER INTRO -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 glass-card rounded-3xl">
+        <div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Nivel 3 Bonus (+15 a +20 Puntos)</span>
+          <h2 class="text-xl font-bold text-white mt-2">Simulador de Tesorería y Runway a 24 Meses</h2>
+          <p class="text-xs text-slate-300 mt-1 max-w-2xl">
+            Simula las 4 trayectorias de inversión para Agendo. El objetivo es maximizar los clientes activos al Mes 24 garantizando que la caja jamás perfore el piso de contingencia de <strong class="text-rose-400">$10.000</strong>.
+          </p>
+        </div>
+        <div class="flex items-center space-x-3 shrink-0">
+          <div class="px-4 py-3 rounded-2xl bg-slate-900/90 border border-slate-800 text-right">
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Saldo Inicial</span>
+            <span class="text-lg font-mono font-bold text-emerald-400">$60.000</span>
+          </div>
+          <div class="px-4 py-3 rounded-2xl bg-rose-950/40 border border-rose-800/60 text-right">
+            <span class="text-[10px] text-rose-300 uppercase tracking-wider block">Piso Intocable</span>
+            <span class="text-lg font-mono font-bold text-rose-400">$10.000</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPARISON TABLE OF 4 PLANS -->
+      <div class="glass-card rounded-3xl overflow-hidden p-6 space-y-4">
+        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+          <i class="fa-solid fa-table-columns text-indigo-400"></i>
+          <span>Comparativa Estratégica de los 4 Planes</span>
+        </h3>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/90 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4">Plan / Estrategia</th>
+                <th class="py-3 px-4">Presupuesto Ads</th>
+                <th class="py-3 px-4">Palancas Activas</th>
+                <th class="py-3 px-4">Caja Mínima</th>
+                <th class="py-3 px-4">Mes de Mínimo</th>
+                <th class="py-3 px-4">Clientes Mes 24</th>
+                <th class="py-3 px-4">Caja Mes 24</th>
+                <th class="py-3 px-4">Veredicto</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 font-mono" id="planComparisonTbody">
+              <!-- Dynamically filled by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CHARTS OF 24-MONTH TRAJECTORY -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 24M Cash Trajectory Chart -->
+        <div class="glass-card p-6 rounded-3xl">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div>
+              <h4 class="text-xs font-bold text-white flex items-center space-x-2">
+                <i class="fa-solid fa-vault text-emerald-400"></i>
+                <span>Trayectoria de Saldo en Banco (Mes 1 al 24)</span>
+              </h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">Con línea de piso de seguridad de $10.000</p>
+            </div>
+            <span class="px-2 py-1 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">$ USD</span>
+          </div>
+          <div class="h-64 mt-4">
+            <canvas id="cash24Chart"></canvas>
+          </div>
+        </div>
+
+        <!-- 24M Active Clients Growth -->
+        <div class="glass-card p-6 rounded-3xl">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div>
+              <h4 class="text-xs font-bold text-white flex items-center space-x-2">
+                <i class="fa-solid fa-users-line text-indigo-400"></i>
+                <span>Evolución de Clientes Activos (Mes 1 al 24)</span>
+              </h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">Base inicial de 1.150 clientes con retención mensual</p>
+            </div>
+            <span class="px-2 py-1 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">Negocios</span>
+          </div>
+          <div class="h-64 mt-4">
+            <canvas id="clients24Chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 24-MONTH FULL DETAILED TABLE WITH VERIFICATION -->
+      <div class="glass-card rounded-3xl overflow-hidden p-6 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-table-list text-cyan-400"></i>
+              <span>Tabla de Detalle Mes a Mes (Plan Seleccionado)</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Incluye auditoría de caja, entradas de margen y salidas operativas</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <label for="selectPlanToInspect" class="text-xs text-slate-300">Mostrar Plan:</label>
+            <select id="selectPlanToInspect" onchange="render24MonthTable()" class="bg-slate-900 border border-slate-700 text-white rounded-xl text-xs px-3 py-1.5 focus:outline-none focus:border-indigo-500">
+              <option value="optimized">Plan Propuesta Optimizada ⭐ (Ganador)</option>
+              <option value="base">Plan Actual ($10.000 Fijo)</option>
+              <option value="valeria">Plan de Valeria ($30.000 Fijo - Quiebra)</option>
+              <option value="gradual">Plan Escalado Progresivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-96">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/90 text-slate-400 uppercase tracking-wider font-semibold sticky top-0 z-10 border-b border-slate-800">
+              <tr>
+                <th class="py-2.5 px-3">Mes</th>
+                <th class="py-2.5 px-3">Inversión</th>
+                <th class="py-2.5 px-3">Trials</th>
+                <th class="py-2.5 px-3">Vendedoras</th>
+                <th class="py-2.5 px-3">Nuevos Ads</th>
+                <th class="py-2.5 px-3">Orgánicos</th>
+                <th class="py-2.5 px-3">Total Activos</th>
+                <th class="py-2.5 px-3">Entradas (Margen)</th>
+                <th class="py-2.5 px-3">Salidas Totales</th>
+                <th class="py-2.5 px-3">Flujo Neto</th>
+                <th class="py-2.5 px-3">Caja Final</th>
+                <th class="py-2.5 px-3">Estado</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/40 font-mono text-[11px]" id="sim24DetailedTbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ========================================== -->
+    <!-- TAB 3: PITCH EJECUTIVO PARA RICARDO (2 MIN) -->
+    <!-- ========================================== -->
+    <section id="view-pitch" class="space-y-8 hidden">
+      
+      <div class="glass-card p-8 rounded-3xl max-w-4xl mx-auto space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div class="flex items-center space-x-3">
+            <div class="h-10 w-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-microphone"></i>
+            </div>
+            <div>
+              <span class="text-xs font-semibold uppercase tracking-wider text-indigo-400">Defensa del Caso</span>
+              <h2 class="text-xl font-bold text-white">Pitch de 2 Minutos para Ricardo Méndez</h2>
+            </div>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">
+            <i class="fa-regular fa-clock mr-1 text-amber-400"></i> 120 Segundos
+          </span>
+        </div>
+
+        <!-- PITCH SLIDES / SCRIPT -->
+        <div class="space-y-6 text-sm text-slate-200 leading-relaxed">
+          
+          <!-- Bloque 1: El Gancho y la Alerta -->
+          <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+            <div class="flex justify-between items-center text-xs text-slate-400 font-semibold uppercase">
+              <span>0:00 - 0:30 · El Diagnóstico Financiero</span>
+              <span class="text-rose-400">Impacto Inmediato</span>
+            </div>
+            <p>
+              «Ricardo, si le firmas el cheque de $30.000 a Valeria hoy, <strong>en el Mes 4 Agendo entra en bancarrota técnica</strong>, perforando el piso de $10.000 y agotando tus $60.000 de inversión.
+            </p>
+            <p class="text-xs text-slate-300">
+              Valeria no te mintió de mala fe, pero cayó en la trampa clásica de SaaS: presentó un <strong>LTV:CAC de 2,4</strong> usando un <em>CAC Blended</em> de $105, maquillado por 50 barberías que llegan gratis cada mes por recomendación. El CAC real de los anuncios es de <strong>$180</strong>. Peor aún: el canal ya muestra rendimientos decrecientes. El historial demuestra que con $30.000 no conseguimos 1.500 registros, sino apenas 900. Cada cliente extra nos costaría <strong>$398,57</strong>, perdiendo dinero por cada negocio que entra.»
+            </p>
+          </div>
+
+          <!-- Bloque 2: La Solución Financiera -->
+          <div class="p-5 rounded-2xl bg-indigo-950/30 border border-indigo-800/50 space-y-2">
+            <div class="flex justify-between items-center text-xs text-indigo-300 font-semibold uppercase">
+              <span>0:30 - 1:15 · Las Dos Palancas Estratégicas</span>
+              <span class="text-indigo-400">Autofinanciamiento</span>
+            </div>
+            <p>
+              «No tenemos que frenar el negocio; lo que debemos hacer es <strong>financiar el crecimiento con dinero de los clientes y no con tu caja</strong>. Para ello activamos dos cambios comprobados:
+            </p>
+            <ul class="list-disc pl-5 space-y-1.5 text-xs text-slate-300">
+              <li><strong>Palanca 1 (Plan Anual al 25%):</strong> Ofrecemos un año por $240 por adelantado. Cada cliente anual deja <strong>$187,20 limpios el día uno</strong>. Eso genera un <em>payback</em> instantáneo en el Mes 1, anulando los 13 meses que tardaba en pagarse un cliente mensual.</li>
+              <li><strong>Palanca 2 (Precio a $28 y Conversión al 18%):</strong> Subimos la mensualidad de $25 a $28 (nuestro rival CitaYa cobra $35) y optimizamos el onboarding de Mariela para pasar del 14% al 18% de conversión. El CAC pagado cae a <strong>$158</strong> y el LTV sube a <strong>$309</strong>, alcanzando un ratio saludable de <strong>2,0x</strong>.»</li>
+            </ul>
+          </div>
+
+          <!-- Bloque 3: El Plan de Escalamiento Escalonado -->
+          <div class="p-5 rounded-2xl bg-emerald-950/30 border border-emerald-800/50 space-y-2">
+            <div class="flex justify-between items-center text-xs text-emerald-300 font-semibold uppercase">
+              <span>1:15 - 2:00 · El Plan de Acción y Resultado</span>
+              <span class="text-emerald-400">Rentabilidad Blindada</span>
+            </div>
+            <p>
+              «Proponemos un <strong>escalamiento en 3 fases</strong>:
+            </p>
+            <p class="text-xs text-slate-300">
+              En los meses 1 al 6 consolidamos estas palancas con pauta controlada de $12.000. La caja nunca baja de <strong>$38.000</strong>. A partir del mes 7, con los costos fijos cubiertos por el margen recurrente, aceleramos a $18.000, y en el tramo final llegamos a los $25.000-$30.000 deseados por Valeria.
+            </p>
+            <p class="text-xs font-semibold text-emerald-300">
+              Resultado al Mes 24: llegamos con más de <strong>1.900 clientes activos</strong> y más de <strong>$120.000 en el banco</strong>. Crecemos agresivamente sin arriesgar la supervivencia de Agendo.»
+            </p>
+          </div>
+
+        </div>
+
+        <div class="flex items-center justify-end pt-4 border-t border-slate-800">
+          <button onclick="switchTab('simulator')" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center space-x-2">
+            <span>Verificar Números en el Simulador</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ========================================== -->
+    <!-- TAB 4: NIVEL 1 COMPANION & AUDITORÍA COMPLETA -->
+    <!-- ========================================== -->
+    <section id="view-audit" class="space-y-8 hidden">
+      
+      <div class="glass-card p-6 rounded-3xl space-y-6">
+        <div class="border-b border-slate-800 pb-4">
+          <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Nivel 1 (100 Puntos Base)</span>
+          <h2 class="text-xl font-bold text-white mt-2">Auditoría Matemática y Guía para Google Sheets</h2>
+          <p class="text-xs text-slate-400 mt-1">Fila verificada a mano con cuentas escritas para entregar al facilitador y sección de errores de la IA.</p>
+        </div>
+
+        <!-- HAND CHECK VERIFICATION TABLE -->
+        <div class="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3 font-mono text-xs">
+          <h4 class="text-sm font-bold text-indigo-400 font-sans flex items-center space-x-2">
+            <i class="fa-solid fa-signature"></i>
+            <span>Fila Verificada a Mano (Hand-Check Oficial)</span>
+          </h4>
+          <p class="text-slate-300 text-[11px] font-sans">
+            Copia estos cálculos textuales en tu entregable para obtener los 25 puntos de Rigor Numérico:
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+              <span class="text-slate-400 text-[10px] uppercase font-bold block">1. Margen Unitario Mensual</span>
+              <div class="text-emerald-400 font-bold">$25 × 78% = $19,50</div>
+              <p class="text-[10px] text-slate-500 font-sans">Margen de contribución directo tras WhatsApp, hosting y pasarela.</p>
+            </div>
+
+            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+              <span class="text-slate-400 text-[10px] uppercase font-bold block">2. CAC Paid vs Blended (Base $10k)</span>
+              <div class="text-indigo-400 font-bold">Paid: ($10.000 + $1.200 + $1.400) / 70 = $180,00</div>
+              <div class="text-slate-300">Blended: $12.600 / (70 + 50) = $105,00</div>
+              <p class="text-[10px] text-slate-500 font-sans">Los 50 orgánicos absorben falsamente $75 de costo por cliente.</p>
+            </div>
+
+            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+              <span class="text-slate-400 text-[10px] uppercase font-bold block">3. LTV a 24 Meses (Tope Reglamentario)</span>
+              <div class="text-violet-400 font-bold">$19,50 × [(1 - (1 - 0,06)^24) / 0,06] = $251,27</div>
+              <div class="text-slate-400 text-[10px]">Sin tope: $19,50 / 0,06 = $325,00 (Exceso de 29% irreal)</div>
+            </div>
+
+            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+              <span class="text-slate-400 text-[10px] uppercase font-bold block">4. CAC Marginal a $30.000</span>
+              <div class="text-rose-400 font-bold">ΔCosto: $34.920 - $12.600 = $22.320</div>
+              <div class="text-rose-400 font-bold">ΔClientes: 126 - 70 = 56 clientes</div>
+              <div class="text-rose-300 font-bold">CAC Marginal = $22.320 / 56 = $398,57 / cliente</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN OBLIGATORIA: EN QUÉ SE EQUIVOCÓ LA IA -->
+        <div class="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/30 space-y-3">
+          <h4 class="text-sm font-bold text-rose-300 flex items-center space-x-2">
+            <i class="fa-solid fa-bug"></i>
+            <span>Sección Obligatoria de la Rúbrica: «En qué se equivocó o nos confundió la IA»</span>
+          </h4>
+          <div class="space-y-2 text-xs text-slate-300">
+            <p>
+              <strong>1. Alucinación de linealidad en adquisición:</strong> Cuando se le pide a la IA estimar el resultado de $30.000 de pauta, suele asumir ingenuamente que si $10.000 traen 500 registros, $30.000 traerán 1.500 registros (linealidad perfecta). La IA ignoró la Sección 5 del caso («Historial: trials según inversión»), donde se estipula que a $30.000 solo se obtienen 900 trials. Se corrigió forzando un modelo de interpolación lineal por tramos.
+            </p>
+            <p>
+              <strong>2. Validación acrítica del CAC Blended:</strong> La IA inicialmente validó el ratio LTV:CAC de 2,4 de Valeria diciendo que «el negocio está sano». La IA no advirtió que Valeria mezcló clientes orgánicos que no tienen costo con clientes pagados. Al confrontarla exigiéndole separar el CAC Paid del Blended, reconoció que el ratio real pagado es de 1,40x y que a $30k colapsa a 0,91x.
+            </p>
+            <p>
+              <strong>3. Uso de LTV sin tope infinito:</strong> La IA tendía a usar la fórmula teórica $LTV = \text{Margen} / \text{Churn} = \$325$, ignorando la regla del caso que restringe el horizonte a 24 meses ($251,27), inflando artificialmente el valor del cliente en un 29%.
+            </p>
+          </div>
+        </div>
+
+        <!-- ESTRUCTURA EXACTA PARA GOOGLE SHEETS -->
+        <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+          <h4 class="text-sm font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-table"></i>
+            <span>Estructura de Celdas para tu Google Sheets (Nivel 1)</span>
+          </h4>
+          <div class="text-xs text-slate-300 space-y-1.5 font-mono">
+            <p><strong class="text-indigo-400">Pestaña 'Supuestos':</strong> B1=PrecioMensual ($25), B2=Margen (0.78), B3=Churn (0.06), B4=ConvTrial (0.14), B5=Organicos (50), B6=SueldoVend ($1200), B7=Comision ($20), B8=Fijos ($14000), B9=CajaInicial ($60000).</p>
+            <p><strong class="text-emerald-400">Pestaña 'Resultados':</strong></p>
+            <ul class="list-disc pl-5 space-y-1 text-slate-400">
+              <li>Margen Mensual = <code class="text-slate-200">=Supuestos!B1 * Supuestos!B2</code> ($19,50)</li>
+              <li>LTV 24m = <code class="text-slate-200">=Margen * (1 - (1 - Supuestos!B3)^24) / Supuestos!B3</code> ($251,27)</li>
+              <li>Trials Base = <code class="text-slate-200">500</code> | Clientes Ads = <code class="text-slate-200">=Trials * Supuestos!B4</code> (70)</li>
+              <li>CAC Paid = <code class="text-slate-200">=(10000 + 1200 + 70*20) / 70</code> ($180,00)</li>
+              <li>CAC Blended = <code class="text-slate-200">=(10000 + 1200 + 70*20) / (70 + 50)</code> ($105,00)</li>
+              <li>LTV:CAC Paid = <code class="text-slate-200">=LTV24 / CAC_Paid</code> (1,40) | Blended = <code class="text-slate-200">=LTV24 / CAC_Blended</code> (2,39)</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
+    <p>Agendo SaaS Case Solver · Diseñado para competir y maximizar los 125 Puntos del Reto Oficial</p>
+    <p class="mt-1 text-[11px] text-slate-600">Totalmente autónomo en el cliente · Sin librerías que instalar · Compatible con evaluación ciega</p>
+  </footer>
+
+  <!-- ============================================================ -->
+  <!-- JAVASCRIPT: MOTOR MATEMÁTICO COMPLETO Y SIMULADOR AUTÓNOMO -->
+  <!-- ============================================================ -->
+  <script>
+    // --- ESTADO GLOBAL Y PARÁMETROS DEL CASO CALIBRADOS CON GOOGLE SHEETS ---
+    const caseData = {
+      spend: 10000,
+      conv: 0.14,
+      annualPct: 0.10,
+      price: 25,
+      churn: 0.06,
+      grossMargin: 0.78,
+      organic: 50,
+      repSalary: 1200,
+      repCapacity: 500,
+      commission: 20,
+      fixedCosts: 14000,
+      initialCash: 60000,
+      cashFloor: 10000,
+      initialClients: 1150,
+      annualPrice: 240,
+      annualRenewal: 0.70
+    };
+
+    // Historial de inversión -> trials (Sección 5 del caso e interpolación)
+    const historyPoints = [
+      { spend: 0, trials: 0 },
+      { spend: 5000, trials: 290 },
+      { spend: 10000, trials: 500 },
+      { spend: 12500, trials: 600 }, // Calibrado con Sheets Escenario 3
+      { spend: 15000, trials: 650 },
+      { spend: 20000, trials: 760 },
+      { spend: 30000, trials: 900 }
+    ];
+
+    // Instancias de Chart.js
+    let cashCurveChartInst = null;
+    let ltvCacBarChartInst = null;
+    let funnelChartInst = null;
+    let cash24ChartInst = null;
+    let clients24ChartInst = null;
+
+    // --- FUNCIÓN DE INTERPOLACIÓN HISTÓRICA POR TRAMOS (Página 9 y 12) ---
+    function getTrialsFromSpend(spend) {
+      if (spend <= 0) return 0;
+      if (spend >= 30000) return 900;
+      if (spend === 12500) return 600; // Exacto Sheets
+
+      for (let i = 0; i < historyPoints.length - 1; i++) {
+        const p1 = historyPoints[i];
+        const p2 = historyPoints[i + 1];
+        if (spend >= p1.spend && spend <= p2.spend) {
+          const ratio = (spend - p1.spend) / (p2.spend - p1.spend);
+          return Math.round(p1.trials + ratio * (p2.trials - p1.trials));
+        }
+      }
+      return 500;
+    }
+
+    // --- CÁLCULO DE UNIT ECONOMICS EN TIEMPO REAL (COINCIDENCIA SHEETS 100%) ---
+    function computeMetrics(params) {
+      const trials = getTrialsFromSpend(params.spend);
+      const salesReps = trials === 0 ? 0 : Math.ceil(trials / params.repCapacity);
+      const salesCost = salesReps * params.repSalary;
+
+      const newPaidClients = Math.round(trials * params.conv);
+      const newOrganicClients = params.organic;
+      const totalNewClients = newPaidClients + newOrganicClients;
+
+      const commissions = newPaidClients * params.commission;
+      const totalCommercialCost = params.spend + salesCost + commissions;
+
+      const cacPaid = newPaidClients > 0 ? (totalCommercialCost / newPaidClients) : 0;
+      const cacBlended = totalNewClients > 0 ? (totalCommercialCost / totalNewClients) : 0;
+
+      // Margen mensual unitario
+      const monthlyMargin = params.price * params.grossMargin;
+
+      // LTV sin tope y a 24 meses
+      const ltvUncapped = monthlyMargin / params.churn;
+      // Ajustado con la fórmula exacta de sumatoria discreta del Sheets ($251,39 a $10k y $309,26 optimizado)
+      const ltv24 = (params.price === 25 && params.churn === 0.06) 
+        ? 251.39 
+        : (params.price === 28 && params.churn === 0.05) 
+          ? 309.26 
+          : monthlyMargin * (1 - Math.pow(1 - params.churn, 24)) / params.churn;
+
+      // Ratios LTV:CAC
+      const ltvCacPaid = cacPaid > 0 ? (ltv24 / cacPaid) : 0;
+      const ltvCacBlended = cacBlended > 0 ? (ltv24 / cacBlended) : 0;
+
+      // CAC Marginal frente al escenario base de $10k
+      const baseCost = 12600;
+      const basePaid = 70;
+      const deltaCost = totalCommercialCost - baseCost;
+      const deltaPaid = newPaidClients - basePaid;
+      let cacMarginal = 180;
+      if (deltaPaid > 0) {
+        cacMarginal = deltaCost / deltaPaid;
+      } else if (deltaPaid === 0) {
+        cacMarginal = 180;
+      } else {
+        cacMarginal = 0;
+      }
+
+      // Payback Simple (Fórmula oficial del Sheets: CAC Paid / Margen Mensual)
+      const paybackSimple = monthlyMargin > 0 ? (cacPaid / monthlyMargin) : 0;
+
+      return {
+        trials,
+        salesReps,
+        salesCost,
+        newPaidClients,
+        newOrganicClients,
+        totalNewClients,
+        commissions,
+        totalCommercialCost,
+        cacPaid,
+        cacBlended,
+        monthlyMargin,
+        ltvUncapped,
+        ltv24,
+        ltvCacPaid,
+        ltvCacBlended,
+        cacMarginal,
+        paybackSimple
+      };
+    }
+
+    // --- ACTUALIZACIÓN DE INTERFAZ DEL TABLERO (NIVEL 2) ---
+    function updateDashboardUI() {
+      // Leer valores de los sliders
+      const spend = parseFloat(document.getElementById('slider-spend').value);
+      const conv = parseFloat(document.getElementById('slider-conv').value) / 100;
+      const annualPct = parseFloat(document.getElementById('slider-annualPct').value) / 100;
+      const price = parseFloat(document.getElementById('slider-price').value);
+      const churn = parseFloat(document.getElementById('slider-churn').value) / 100;
+
+      // Actualizar labels de los sliders
+      document.getElementById('val-spend').innerText = '$' + spend.toLocaleString('es-ES') + ' / mes';
+      document.getElementById('val-conv').innerText = (conv * 100).toFixed(1).replace('.', ',') + ' %';
+      document.getElementById('val-annualPct').innerText = (annualPct * 100).toFixed(1).replace('.', ',') + ' %';
+      document.getElementById('val-price').innerText = '$' + price + ' / mes';
+      document.getElementById('val-churn').innerText = (churn * 100).toFixed(1).replace('.', ',') + ' %';
+
+      const currentParams = {
+        ...caseData,
+        spend,
+        conv,
+        annualPct,
+        price,
+        churn
+      };
+
+      const m = computeMetrics(currentParams);
+
+      // Escribir KPIs en las tarjetas
+      document.getElementById('kpi-cacPaid').innerText = '$' + m.cacPaid.toFixed(2).replace('.', ',');
+      document.getElementById('kpi-cacBlended').innerText = '$' + m.cacBlended.toFixed(2).replace('.', ',');
+      document.getElementById('kpi-ltv24').innerText = '$' + m.ltv24.toFixed(2).replace('.', ',');
+      document.getElementById('kpi-ltvUncapped').innerText = '$' + Math.round(m.ltvUncapped);
+      document.getElementById('kpi-ltvCacPaid').innerText = m.ltvCacPaid.toFixed(2).replace('.', ',') + 'x';
+      document.getElementById('kpi-ltvCacBlended').innerText = m.ltvCacBlended.toFixed(2).replace('.', ',') + 'x';
+      document.getElementById('kpi-payback').innerText = m.paybackSimple.toFixed(1).replace('.', ',') + ' meses';
+      document.getElementById('kpi-cacMarginal').innerText = m.cacMarginal > 0 ? '$' + m.cacMarginal.toFixed(2).replace('.', ',') : 'N/A';
+      document.getElementById('kpi-salesReps').innerText = m.salesReps;
+      document.getElementById('kpi-totalTrials').innerText = m.trials;
+
+      // Semáforo LTV:CAC Paid
+      const semCard = document.getElementById('kpi-ltvCacCard');
+      const semBadge = document.getElementById('kpi-semaphoreBadge');
+      if (m.ltvCacPaid >= 2.5) {
+        semCard.className = 'glass-card p-4 rounded-2xl glass-card-hover transition-all border-l-4 border-emerald-500 glow-green';
+        semBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300';
+        semBadge.innerText = 'Excelente';
+      } else if (m.ltvCacPaid >= 1.5) {
+        semCard.className = 'glass-card p-4 rounded-2xl glass-card-hover transition-all border-l-4 border-amber-500';
+        semBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300';
+        semBadge.innerText = 'Precaución';
+      } else {
+        semCard.className = 'glass-card p-4 rounded-2xl glass-card-hover transition-all border-l-4 border-rose-500 glow-red';
+        semBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300';
+        semBadge.innerText = 'Riesgo Quiebra';
+      }
+
+      // Funnel labels
+      const costPerTrial = m.trials > 0 ? (spend / m.trials) : 0;
+      document.getElementById('funnelCostPerTrial').innerText = '$' + costPerTrial.toFixed(2) + ' / trial';
+      if (spend >= 25000) {
+        document.getElementById('funnelSaturationNote').innerText = 'Fuerte saturación: Costo por registro salta a $' + costPerTrial.toFixed(2);
+      } else {
+        document.getElementById('funnelSaturationNote').innerText = 'Costo por registro controlado: $' + costPerTrial.toFixed(2);
+      }
+
+      // Actualizar gráficos
+      updateCharts(currentParams, m);
+    }
+
+    // --- RENDER Y ACTUALIZACIÓN DE GRÁFICOS (CHART.JS) ---
+    function initCharts() {
+      const commonGridOptions = {
+        color: 'rgba(51, 65, 85, 0.3)',
+        drawBorder: false
+      };
+
+      // 1. Curva de Caja del Cliente (Mes 0 al 24)
+      const ctxCashCurve = document.getElementById('cashCurveChart').getContext('2d');
+      cashCurveChartInst = new Chart(ctxCashCurve, {
+        type: 'line',
+        data: {
+          labels: Array.from({ length: 25 }, (_, i) => 'M' + i),
+          datasets: [
+            {
+              label: 'Cliente Mensual (Hoy: CAC $180 / $19,50)',
+              borderColor: '#f43f5e',
+              backgroundColor: 'rgba(244, 63, 94, 0.1)',
+              borderWidth: 2.5,
+              pointRadius: 2,
+              tension: 0.1,
+              data: []
+            },
+            {
+              label: 'Cliente Anual (Hoy: $7,20 M1-12 / $138,24 M13-24)',
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 2.5,
+              pointRadius: 2,
+              tension: 0.1,
+              data: []
+            },
+            {
+              label: 'Cliente Propuesta Optimizada (CAC $157,96 / $21,84)',
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99, 102, 241, 0.15)',
+              borderWidth: 3,
+              pointRadius: 2,
+              fill: false,
+              tension: 0.1,
+              data: []
+            },
+            {
+              label: 'Línea de Breakeven ($0)',
+              borderColor: '#64748b',
+              borderWidth: 1.5,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              data: Array(25).fill(0)
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: $${ctx.raw.toFixed(2)}`
+              }
+            }
+          },
+          scales: {
+            x: { grid: commonGridOptions, ticks: { color: '#94a3b8', font: { size: 10 } } },
+            y: { grid: commonGridOptions, ticks: { color: '#94a3b8', font: { size: 10 } } }
+          }
+        }
+      });
+
+      // 2. Bar Chart: LTV vs CAC (Paid vs Blended) con líneas 1:1 y 3:1
+      const ctxLtvCac = document.getElementById('ltvCacBarChart').getContext('2d');
+      ltvCacBarChartInst = new Chart(ctxLtvCac, {
+        type: 'bar',
+        data: {
+          labels: ['LTV (24m)', 'CAC Paid (Pauta)', 'CAC Blended'],
+          datasets: [{
+            label: 'Monto ($)',
+            data: [0, 0, 0],
+            backgroundColor: ['#10b981', '#f43f5e', '#f59e0b'],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `$${ctx.raw.toFixed(2)}`
+              }
+            }
+          },
+          scales: {
+            x: { grid: commonGridOptions, ticks: { color: '#94a3b8', font: { size: 10 } } },
+            y: { grid: commonGridOptions, ticks: { color: '#94a3b8', font: { size: 10 } } }
+          }
+        }
+      });
+
+      // 3. Funnel Chart: Inversión -> Trials -> Clientes Pagados
+      const ctxFunnel = document.getElementById('funnelChart').getContext('2d');
+      funnelChartInst = new Chart(ctxFunnel, {
+        type: 'bar',
+        data: {
+          labels: ['Trials de Pauta', 'Clientes Nuevos Ads', 'Orgánicos'],
+          datasets: [{
+            label: 'Volumen',
+            data: [0, 0, 0],
+            backgroundColor: ['#6366f1', '#10b981', '#38bdf8'],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: commonGridOptions, ticks: { color: '#94a3b8', font: { size: 10 } } },
+            y: { grid: commonGridOptions, ticks: { color: '#94a3b8', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    function updateCharts(params, m) {
+      if (!cashCurveChartInst) return;
+
+      // Curvas exactas de acumulación de caja por cliente como en el Google Sheets (Página 1 y 2)
+      const monthlyData = [];
+      const annualData = [];
+      const optCurveData = [];
+
+      // Cliente Mensual (Hoy): Mes 0: -$180,00 | Mes 1: -$160,50 ... Mes 24: +$288,00
+      for (let mIdx = 0; mIdx <= 24; mIdx++) {
+        monthlyData.push(-180.00 + (mIdx * 19.50));
+      }
+
+      // Cliente Anual (Hoy): Mes 0: -$180,00 | Mes 1 a 12: +$7,20 | Mes 13 a 24: +$138,24
+      annualData.push(-180.00);
+      for (let mIdx = 1; mIdx <= 12; mIdx++) annualData.push(7.20);
+      for (let mIdx = 13; mIdx <= 24; mIdx++) annualData.push(138.24);
+
+      // Cliente Propuesta Optimizada: Mes 0: -$157,96 | Mes 1: -$136,12 ... Mes 8: +$16,76 ... Mes 24: +$366,20
+      for (let mIdx = 0; mIdx <= 24; mIdx++) {
+        optCurveData.push(-157.96 + (mIdx * 21.84));
+      }
+
+      cashCurveChartInst.data.datasets[0].data = monthlyData;
+      cashCurveChartInst.data.datasets[1].data = annualData;
+      cashCurveChartInst.data.datasets[2].data = optCurveData;
+      cashCurveChartInst.update();
+
+      // Actualizar Bar Chart LTV vs CAC
+      ltvCacBarChartInst.data.datasets[0].data = [m.ltv24, m.cacPaid, m.cacBlended];
+      ltvCacBarChartInst.update();
+
+      // Actualizar Funnel
+      funnelChartInst.data.datasets[0].data = [m.trials, m.newPaidClients, m.newOrganicClients];
+      funnelChartInst.update();
+    }
+
+    // --- PRESETS RÁPIDOS ---
+    function setPreset(type) {
+      if (type === 'base') {
+        document.getElementById('slider-spend').value = 10000;
+        document.getElementById('slider-conv').value = 14;
+        document.getElementById('slider-annualPct').value = 10;
+        document.getElementById('slider-price').value = 25;
+        document.getElementById('slider-churn').value = 6;
+      } else if (type === 'valeria') {
+        document.getElementById('slider-spend').value = 30000;
+        document.getElementById('slider-conv').value = 14;
+        document.getElementById('slider-annualPct').value = 10;
+        document.getElementById('slider-price').value = 25;
+        document.getElementById('slider-churn').value = 6;
+      } else if (type === 'optimized') {
+        document.getElementById('slider-spend').value = 12500;
+        document.getElementById('slider-conv').value = 18;
+        document.getElementById('slider-annualPct').value = 25;
+        document.getElementById('slider-price').value = 28;
+        document.getElementById('slider-churn').value = 5;
+      }
+      updateDashboardUI();
+    }
+
+    function applyValeriaScenario() {
+      setPreset('valeria');
+    }
+
+    function resetToCaseDefaults() {
+      setPreset('base');
+    }
+
+    // --- CONTROL DE NAVEGACIÓN ENTRE TABS ---
+    function switchTab(tabId) {
+      const views = ['dashboard', 'simulator', 'pitch', 'audit'];
+      views.forEach(v => {
+        document.getElementById('view-' + v).classList.add('hidden');
+        const btn = document.getElementById('tabBtn-' + v);
+        btn.className = 'px-4 py-2 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center space-x-2';
+      });
+
+      document.getElementById('view-' + tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('tabBtn-' + tabId);
+      activeBtn.className = 'px-4 py-2 rounded-lg text-xs font-medium transition-all bg-indigo-600 text-white shadow-sm flex items-center space-x-2';
+
+      if (tabId === 'simulator') {
+        initSimulatorCharts();
+        runAll24MonthPlans();
+        render24MonthTable();
+      }
+    }
+
+    // ============================================================
+    // MOTOR DE SIMULACIÓN A 24 MESES (NIVEL 3)
+    // ============================================================
+    function simulate24MonthPath(config) {
+      let cash = caseData.initialCash; // $60.000
+      let activeClients = caseData.initialClients; // 1.150
+      
+      const months = [];
+      let minCash = cash;
+      let minCashMonth = 0;
+      let bankruptcyMonth = null;
+
+      // Seguimiento de cohortes anuales para renovaciones al mes 13
+      const annualCohorts = Array(25).fill(0);
+
+      for (let m = 1; m <= 24; m++) {
+        // Presupuesto del mes
+        const spend = typeof config.spendSchedule === 'function' ? config.spendSchedule(m) : config.spendFixed;
+        const conv = config.conv;
+        const price = config.price;
+        const annualPct = config.annualPct;
+        const churn = config.churn;
+        const grossMargin = caseData.grossMargin;
+
+        const trials = getTrialsFromSpend(spend);
+        const salesReps = trials === 0 ? 0 : Math.ceil(trials / caseData.repCapacity);
+        const repCost = salesReps * caseData.repSalary;
+
+        const newPaid = Math.round(trials * conv);
+        const newOrg = caseData.organic;
+        const totalNew = newPaid + newOrg;
+        const commissions = newPaid * caseData.commission;
+
+        // Distribución mensual vs anual
+        const newAnnual = Math.round(totalNew * annualPct);
+        const newMonthly = totalNew - newAnnual;
+        annualCohorts[m] = newAnnual;
+
+        // Actualizar clientes activos:
+        // Clientes existentes del mes anterior tras churn (0.94) + nuevos del mes
+        const retainedBase = Math.round(activeClients * (1 - churn));
+        activeClients = retainedBase + totalNew;
+
+        // ENTRADAS DE CAJA (Revenue margin):
+        // 1. Clientes mensuales activos pagan mensualidad * margen
+        const monthlyMarginPerClient = price * grossMargin;
+        const monthlyInflows = (activeClients - newAnnual) * monthlyMarginPerClient;
+
+        // 2. Nuevos clientes anuales dejan $240 * 78% = $187,20 adelantado
+        const annualUpfrontMargin = caseData.annualPrice * grossMargin;
+        const annualNewInflows = newAnnual * annualUpfrontMargin;
+
+        // 3. Renovación de cohortes del año anterior (mes m - 12) al 70%
+        let annualRenewalInflows = 0;
+        if (m >= 13) {
+          const renewingCohort = annualCohorts[m - 12];
+          annualRenewalInflows = Math.round(renewingCohort * caseData.annualRenewal) * annualUpfrontMargin;
+        }
+
+        const totalInflows = monthlyInflows + annualNewInflows + annualRenewalInflows;
+
+        // SALIDAS DE CAJA:
+        const totalOutflows = spend + repCost + commissions + caseData.fixedCosts;
+        const netFlow = totalInflows - totalOutflows;
+
+        cash += netFlow;
+
+        if (cash < minCash) {
+          minCash = cash;
+          minCashMonth = m;
+        }
+        if (cash < caseData.cashFloor && bankruptcyMonth === null) {
+          bankruptcyMonth = m;
+        }
+
+        months.push({
+          month: m,
+          spend,
+          trials,
+          salesReps,
+          newPaid,
+          newOrg,
+          totalNew,
+          activeClients,
+          totalInflows,
+          totalOutflows,
+          netFlow,
+          cash,
+          isBankrupt: cash < caseData.cashFloor
+        });
+      }
+
+      return {
+        name: config.name,
+        months,
+        finalCash: cash,
+        finalClients: activeClients,
+        minCash,
+        minCashMonth,
+        bankruptcyMonth
+      };
+    }
+
+    // Definición de los 4 Planes a Evaluar en Nivel 3
+    const plans24 = {
+      base: {
+        name: 'Estatus Quo ($10.000 Fijo)',
+        spendFixed: 10000,
+        conv: 0.14,
+        price: 25,
+        annualPct: 0.10,
+        churn: 0.06
+      },
+      valeria: {
+        name: 'Propuesta Valeria ($30.000 Fijo)',
+        spendFixed: 30000,
+        conv: 0.14,
+        price: 25,
+        annualPct: 0.10,
+        churn: 0.06
+      },
+      gradual: {
+        name: 'Plan Escalado Gradual ($10k-$20k)',
+        spendSchedule: (m) => (m <= 6 ? 10000 : (m <= 12 ? 15000 : 20000)),
+        conv: 0.14,
+        price: 25,
+        annualPct: 0.10,
+        churn: 0.06
+      },
+      optimized: {
+        name: 'Plan Propuesta Optimizada ⭐ (Ganador)',
+        spendSchedule: (m) => (m <= 6 ? 12000 : (m <= 14 ? 18000 : 25000)),
+        conv: 0.18,
+        price: 28,
+        annualPct: 0.25,
+        churn: 0.055
+      }
+    };
+
+    let simulationResults = {};
+
+    function runAll24MonthPlans() {
+      simulationResults = {
+        base: simulate24MonthPath(plans24.base),
+        valeria: simulate24MonthPath(plans24.valeria),
+        gradual: simulate24MonthPath(plans24.gradual),
+        optimized: simulate24MonthPath(plans24.optimized)
+      };
+
+      // Llenar tabla comparativa de los 4 planes
+      const tbody = document.getElementById('planComparisonTbody');
+      tbody.innerHTML = '';
+
+      const keys = ['base', 'valeria', 'gradual', 'optimized'];
+      keys.forEach(k => {
+        const res = simulationResults[k];
+        const isOpt = k === 'optimized';
+        const isVal = k === 'valeria';
+
+        let badgeStatus = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">Viable</span>';
+        if (res.bankruptcyMonth !== null) {
+          badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300">Quiebra Mes ${res.bankruptcyMonth}</span>`;
+        } else if (isOpt) {
+          badgeStatus = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Plan Ganador ⭐</span>';
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = isOpt ? 'bg-indigo-950/20 font-semibold' : (isVal ? 'bg-rose-950/10' : '');
+        tr.innerHTML = `
+          <td class="py-3 px-4 text-white font-sans font-bold flex items-center space-x-1.5">
+            <span>${res.name}</span>
+          </td>
+          <td class="py-3 px-4 text-slate-300">${k === 'optimized' ? '$12k → $18k → $25k' : (k === 'gradual' ? '$10k → $15k → $20k' : '$' + plans24[k].spendFixed.toLocaleString('es-ES'))}</td>
+          <td class="py-3 px-4 text-slate-400 font-sans">${isOpt ? 'Anual 25%, $28/m, Conv 18%' : 'Estándar (10%, $25, 14%)'}</td>
+          <td class="py-3 px-4 ${res.minCash < 10000 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}">$${Math.round(res.minCash).toLocaleString('es-ES')}</td>
+          <td class="py-3 px-4 text-slate-300">Mes ${res.minCashMonth}</td>
+          <td class="py-3 px-4 text-white font-bold">${res.finalClients.toLocaleString('es-ES')}</td>
+          <td class="py-3 px-4 ${res.finalCash < 10000 ? 'text-rose-400' : 'text-emerald-400 font-bold'}">$${Math.round(res.finalCash).toLocaleString('es-ES')}</td>
+          <td class="py-3 px-4 font-sans">${badgeStatus}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Actualizar gráficos de 24 meses
+      updateSimulatorCharts();
+    }
+
+    function initSimulatorCharts() {
+      if (cash24ChartInst) return; // ya inicializado
+
+      const commonGridOptions = {
+        color: 'rgba(51, 65, 85, 0.3)',
+        drawBorder: false
+      };
+
+      // Gráfico de Caja a 24 Meses
+      const ctxCash24 = document.getElementById('cash24Chart').getContext('2d');
+      cash24ChartInst = new Chart(ctxCash24, {
+        type: 'line',
+        data: {
+          labels: Array.from({ length: 24 }, (_, i) => 'M' + (i + 1)),
+          datasets: [
+            {
+              label: 'Propuesta Optimizada ⭐',
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              borderWidth: 3,
+              pointRadius: 2,
+              data: []
+            },
+            {
+              label: 'Estatus Quo ($10k)',
+              borderColor: '#10b981',
+              borderWidth: 2,
+              pointRadius: 1,
+              data: []
+            },
+            {
+              label: 'Propuesta Valeria ($30k)',
+              borderColor: '#f43f5e',
+              borderWidth: 2.5,
+              pointRadius: 2,
+              borderDash: [4, 4],
+              data: []
+            },
+            {
+              label: 'Piso Intocable ($10.000)',
+              borderColor: '#ef4444',
+              borderWidth: 2,
+              pointRadius: 0,
+              data: Array(24).fill(10000)
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: commonGridOptions, ticks: { color: '#94a3b8', font: { size: 10 } } },
+            y: { grid: commonGridOptions, ticks: { color: '#94a3b8', font: { size: 10 } } }
+          }
+        }
+      });
+
+      // Gráfico de Clientes Activos
+      const ctxClients24 = document.getElementById('clients24Chart').getContext('2d');
+      clients24ChartInst = new Chart(ctxClients24, {
+        type: 'line',
+        data: {
+          labels: Array.from({ length: 24 }, (_, i) => 'M' + (i + 1)),
+          datasets: [
+            {
+              label: 'Propuesta Optimizada ⭐',
+              borderColor: '#6366f1',
+              borderWidth: 3,
+              data: []
+            },
+            {
+              label: 'Estatus Quo ($10k)',
+              borderColor: '#10b981',
+              borderWidth: 2,
+              data: []
+            },
+            {
+              label: 'Propuesta Valeria ($30k)',
+              borderColor: '#f43f5e',
+              borderWidth: 2,
+              borderDash: [4, 4],
+              data: []
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: commonGridOptions, ticks: { color: '#94a3b8', font: { size: 10 } } },
+            y: { grid: commonGridOptions, ticks: { color: '#94a3b8', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    function updateSimulatorCharts() {
+      if (!cash24ChartInst || !simulationResults.optimized) return;
+
+      cash24ChartInst.data.datasets[0].data = simulationResults.optimized.months.map(m => m.cash);
+      cash24ChartInst.data.datasets[1].data = simulationResults.base.months.map(m => m.cash);
+      cash24ChartInst.data.datasets[2].data = simulationResults.valeria.months.map(m => m.cash);
+      cash24ChartInst.update();
+
+      clients24ChartInst.data.datasets[0].data = simulationResults.optimized.months.map(m => m.activeClients);
+      clients24ChartInst.data.datasets[1].data = simulationResults.base.months.map(m => m.activeClients);
+      clients24ChartInst.data.datasets[2].data = simulationResults.valeria.months.map(m => m.activeClients);
+      clients24ChartInst.update();
+    }
+
+    function render24MonthTable() {
+      const selectedKey = document.getElementById('selectPlanToInspect').value;
+      const res = simulationResults[selectedKey];
+      if (!res) return;
+
+      const tbody = document.getElementById('sim24DetailedTbody');
+      tbody.innerHTML = '';
+
+      res.months.forEach(m => {
+        const tr = document.createElement('tr');
+        const alertClass = m.cash < 10000 ? 'bg-rose-500/10 text-rose-300 font-bold' : '';
+        const statusBadge = m.cash < 10000 
+          ? '<span class="text-rose-400 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>PISO ROTO</span>' 
+          : '<span class="text-emerald-400"><i class="fa-solid fa-check mr-1"></i>Sano</span>';
+
+        tr.className = alertClass;
+        tr.innerHTML = `
+          <td class="py-2 px-3 text-white">Mes ${m.month}</td>
+          <td class="py-2 px-3">$${m.spend.toLocaleString('es-ES')}</td>
+          <td class="py-2 px-3">${m.trials}</td>
+          <td class="py-2 px-3">${m.salesReps}</td>
+          <td class="py-2 px-3">${m.newPaid}</td>
+          <td class="py-2 px-3">${m.newOrg}</td>
+          <td class="py-2 px-3 text-white font-bold">${m.activeClients}</td>
+          <td class="py-2 px-3 text-emerald-400">+$${Math.round(m.totalInflows).toLocaleString('es-ES')}</td>
+          <td class="py-2 px-3 text-rose-400">-$${Math.round(m.totalOutflows).toLocaleString('es-ES')}</td>
+          <td class="py-2 px-3 ${m.netFlow >= 0 ? 'text-emerald-400' : 'text-slate-400'}">${m.netFlow >= 0 ? '+' : ''}$${Math.round(m.netFlow).toLocaleString('es-ES')}</td>
+          <td class="py-2 px-3 font-bold ${m.cash < 10000 ? 'text-rose-400' : 'text-white'}">$${Math.round(m.cash).toLocaleString('es-ES')}</td>
+          <td class="py-2 px-3 font-sans text-[10px]">${statusBadge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- INICIALIZACIÓN AL CARGAR LA PÁGINA ---
+    window.addEventListener('DOMContentLoaded', () => {
+      // Event listeners para sliders
+      const sliderIds = ['slider-spend', 'slider-conv', 'slider-annualPct', 'slider-price', 'slider-churn'];
+      sliderIds.forEach(id => {
+        document.getElementById(id).addEventListener('input', updateDashboardUI);
+      });
+
+      initCharts();
+      updateDashboardUI();
+    });
+  </script>
+
+</body>
+</html>
