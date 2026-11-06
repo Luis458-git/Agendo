@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Agendo · Tu barbería con reservas online</title>
+  <!-- ESTILOS SEPARADOS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- CONTENEDOR PRINCIPAL TIPO CELULAR (~390px) -->
+  <div class="app-container">
+
+    <!-- BARRA DE CONTEXTO RÁPIDO PARA NAVEGACIÓN DUAL Y PANEL VALERIA -->
+    <div id="mode-bar" class="mode-bar">
+      <div class="mode-bar-left">
+        <span id="current-view-mode" class="mode-pill">👤 Vista Barbero</span>
+      </div>
+      <div class="mode-bar-actions">
+        <button class="mode-switch-btn" id="mode-switch-btn" onclick="toggleContextView()">
+          Vista Cliente 👁️
+        </button>
+        <button class="btn-valeria-nav" onclick="renderValeriaPanel('compare')">
+          📊 Para Valeria
+        </button>
+      </div>
+    </div>
+
+    <!-- ENCABEZADO PERSISTENTE CON BARRA DE AVANCE -->
+    <header class="app-header" id="app-header">
+      <div class="brand-row">
+        <div class="brand-logo" onclick="renderScreen1()">
+          <span class="pole"></span>
+          <span>Agendo</span>
+        </div>
+        <div class="trial-badge">
+          14 días gratis (simulado)
+        </div>
+      </div>
+
+      <!-- INDICADOR DE PASOS (1 A 5) -->
+      <div class="progress-bar-wrap" id="progress-container">
+        <div class="progress-label-row">
+          <span id="step-label">Paso 1 de 5: Datos de tu barbería</span>
+          <span id="step-time">⏱️ ~5 min (simulado)</span>
+        </div>
+        <div class="progress-track">
+          <div id="progress-fill" class="progress-fill" style="width: 20%;"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ÁREA DINÁMICA DE LA PANTALLA -->
+    <main id="screen-container" class="screen-content">
+      <!-- Inyectado por app.js -->
+    </main>
+
+    <!-- BARRA INFERIOR DE ACCIONES (ZONA DEL PULGAR) -->
+    <footer id="bottom-bar" class="bottom-bar">
+      <!-- Botones dinámicos según pantalla -->
+    </footer>
+
+    <!-- TOAST DE FEEDBACK FLOTANTE -->
+    <div id="toast-msg" class="toast-feedback">
+      <span id="toast-text">Mensaje copiado</span>
+    </div>
+
+  </div>
+
+  <!-- LÓGICA Y CONTROLADOR SEPARADO -->
+  <script src="app.js"></script>
+</body>
+</html>
